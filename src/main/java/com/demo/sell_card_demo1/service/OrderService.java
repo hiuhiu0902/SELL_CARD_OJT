@@ -161,11 +161,43 @@ public class OrderService {
     public Page<Order> getAllOrders(Pageable pageable) {
         return orderRepository.findAll(pageable);
     }
-
+    /**
+     * Cập nhật trạng thái của một đơn hàng (dành cho admin).
+     * @param orderId ID của đơn hàng
+     * @param newStatus Trạng thái mới
+     * @return Order đã được cập nhật
+     */
     public Order updateOrderStatus(Long orderId, OrderStatus newStatus) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new BadRequestException("Order not found with id: " + orderId));
         order.setStatus(newStatus);
         return orderRepository.save(order);
+    }
+    /**
+     * Người dùng hủy đơn hàng của chính họ.
+     * Chỉ cho phép hủy khi đơn hàng đang ở trạng thái PENDING.
+     * @param orderId ID của đơn hàng cần hủy
+     */
+    public void cancelOrder(Long orderId){
+        User user = authenticationService.getCurrentUser();
+        Order order = orderRepository.findByIdAndUser_Id(orderId, user.getUserId()).orElse(null);
+        if(order == null){
+            throw new BadRequestException("Order not found");
+        }
+        if(!order.getStatus().equals(OrderStatus.PENDING)){
+            throw new BadRequestException("Only pending orders can be cancelled");
+        }
+        order.setStatus(OrderStatus.CANCELLED);
+        for(OrderItem item : order.getOrderItems()) {
+            List<Storage> storages = stockRepository.findByOrderItem_ItemId(item.getItemId());
+            for(Storage storage : storages){
+                storage.setStatus(CardStatus.UNUSED);
+                storage.setOrderItem(null);
+                stockRepository.save(storage);
+            }
+        }
+    }
+    public Order getOrderById(Long orderId) {
+        return orderRepository.findById(orderId).orElse(null);
     }
 }

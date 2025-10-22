@@ -59,8 +59,6 @@ public class SecurityConfig {
                                 .requestMatchers("/ws" +
                                         "/**", "/ws").permitAll()
                                 .requestMatchers("/admin/**").hasRole("ADMIN")
-                                .requestMatchers("/api/staff/**").hasRole("STAFF")
-                                .requestMatchers("/api/coach/**").hasRole("COACH")
                                 .requestMatchers("/api/member/**").hasRole("MEMBER")
                                 .anyRequest().authenticated()
                 )

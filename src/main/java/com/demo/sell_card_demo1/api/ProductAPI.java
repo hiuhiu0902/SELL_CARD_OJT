@@ -32,5 +32,14 @@ public class ProductAPI {
         List<ProductVariantResponse> responses = productService.getAllProductVariants(productId);
         return ResponseEntity.ok().body(responses);
     }
-
+    @GetMapping
+    public ResponseEntity getProductById(@PathVariable Long productId){
+        ProductResponse response = productService.getProductById(productId);
+        return ResponseEntity.ok().body(response);
+    }
+    @GetMapping
+    public ResponseEntity getProductByName(@PathVariable String productName){
+        ProductResponse responses = productService.getProductByName(productName);
+        return ResponseEntity.ok().body(responses);
+    }
 }

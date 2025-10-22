@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 
 @Service
@@ -59,11 +60,13 @@ public class ProductService {
         response.value = productVariant.getValue();
         return response;
     }
-    public Product getProductByName(String name){
-        return productRepository.getProductByName(name);
+    public ProductResponse getProductByName(String name){
+        Product product = productRepository.getProductByName(name);
+        return convertToProductResponse(product);
     }
-    public Product getProductById(Long id){
-        return productRepository.findById(id).orElse(null);
+    public ProductResponse getProductById(Long id){
+        Product product =  productRepository.findById(id).orElse(null);
+        return convertToProductResponse(product);
     }
     public Product addProduct(CreateProductRequest request){
         User user = authenticationService.getCurrentUser();
@@ -141,5 +144,45 @@ public class ProductService {
                 .map(this::convertToProductVariantResponse)
                 .toList();
         return responses;
+    }
+    /**
+     * Cập nhật thông tin một sản phẩm đã có.
+     * @param productId ID của sản phẩm cần cập nhật
+     * @param request DTO chứa thông tin mới
+     * @return Product đã được cập nhật
+     */
+    public Product updateProduct(Long productId, UpdateProductRequest request) {
+        Product product = productRepository.findById(productId).orElse(null);
+        Optional<Product> existingProduct = productRepository.findByName(request.getName());
+        if (existingProduct.isPresent() && !existingProduct.get().getProductId().equals(productId)) {
+            throw new BadRequestException("Product name already exists");
+        }
+        Branch branch = branchRepository.findBranchByName(request.getBranchName());
+        if (branch == null) {
+            throw new BadRequestException("Branch not found");
+        }
+        Discount discount = discountRepository.findByCode(request.getDiscountCode());
+        if (discount == null) {
+            throw new BadRequestException("Discount not found");
+        }
+        product.setName(request.getName());
+        product.setDescription(request.getDescription());
+        product.setBranch(branch);
+        product.setPictureUrl(request.getImageUrl());
+        product.setDiscount(discount);
+        return productRepository.save(product);
+    }
+    public void deleteProduct(Long productId) {
+        Product product = productRepository
+                .findById(productId)
+                .orElseThrow(() -> new BadRequestException("Product not found with id: " + productId));
+        productRepository.deleteById(productId);
+    }
+    public ProductVariant updateProductVariant(Long variantId, UpdateVariantRequest request){
+        ProductVariant variant = productVariantsRepository.findById(variantId).orElse(null);
+        variant.setPrice(request.getPrice());
+        variant.setCurrency(request.getCurrency());
+        variant.setValue(request.getValue());
+        return productVariantsRepository.save(variant);
     }
 }

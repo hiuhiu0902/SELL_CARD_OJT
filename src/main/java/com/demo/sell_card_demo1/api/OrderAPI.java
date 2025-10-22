@@ -63,4 +63,13 @@ public class OrderAPI {
         OrderDetailResponse response = orderService.getOrderDetailForCurrentUser(orderId);
         return ResponseEntity.ok(response);
     }
+    @PostMapping("/{orderId}/cancel")
+    public ResponseEntity<String> cancelOrder(@PathVariable Long orderId) {
+        try {
+            orderService.cancelOrder(orderId);
+            return ResponseEntity.ok("Order with id " + orderId + " has been cancelled.");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }
