@@ -28,7 +28,8 @@ public class OrderAPI {
     OrderService orderService;
     @Autowired
     PaymentService paymentService;
-//    @PostMapping("/create-order")
+
+    //    @PostMapping("/create-order")
 //    public ResponseEntity createOrder(CreateOrderRequest createOrderRequest) {
 //        orderService.createOrder(createOrderRequest);
 //        return ResponseEntity.ok("Create order");
@@ -52,17 +53,19 @@ public class OrderAPI {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
     @GetMapping("/history")
     public ResponseEntity getOrderHistory(Pageable pageable) {
-        List<OrderHistoryResponse> responses =  orderService.getOrderHistoryForCurrentUser(pageable);
+        List<OrderHistoryResponse> responses = orderService.getOrderHistoryForCurrentUser(pageable);
         return ResponseEntity.ok(responses);
     }
 
-    @GetMapping("/{orderId}" )
+    @GetMapping("/{orderId}")
     public ResponseEntity getOrderDetailById(@PathVariable Long orderId) {
         OrderDetailResponse response = orderService.getOrderDetailForCurrentUser(orderId);
         return ResponseEntity.ok(response);
     }
+
     @PostMapping("/{orderId}/cancel")
     public ResponseEntity<String> cancelOrder(@PathVariable Long orderId) {
         try {

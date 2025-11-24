@@ -25,6 +25,7 @@ import java.util.List;
 public class SecurityConfig {
     @Autowired
     Filter filter;
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();

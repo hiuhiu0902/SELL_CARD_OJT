@@ -11,6 +11,8 @@ import java.util.List;
 @Repository
 public interface StorageRepository extends JpaRepository<Storage, Long> {
     long countByVariant_VariantIdAndStatus(Long variantId, CardStatus status);
+
     List<Storage> findByStatusAndVariant_VariantId(CardStatus status, Long variantId, Pageable pageable);
+
     List<Storage> findByOrderItem_ItemId(Long itemId);
 }

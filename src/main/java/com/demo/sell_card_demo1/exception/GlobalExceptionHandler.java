@@ -17,10 +17,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<String> handleBadRequestException(Exception e) {
         return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
     }
+
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity handleAuthenticationException(Exception e) {
         return new ResponseEntity(e.getMessage(), HttpStatus.UNAUTHORIZED);
     }
+
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity handleAccessDeniedException(Exception e) {
         return new ResponseEntity(e.getMessage(), HttpStatus.FORBIDDEN);

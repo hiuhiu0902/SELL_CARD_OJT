@@ -12,16 +12,17 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class MyExceptionHandler {
     // Sửa đối số thành BadRequestException
     @ExceptionHandler(BadRequestException.class)
-    public ResponseEntity<String> handleBadRequestException(BadRequestException exception){
+    public ResponseEntity<String> handleBadRequestException(BadRequestException exception) {
         System.out.println("Người dùng nhập chưa đúng thông tin: " + exception.getMessage());
 
         return new ResponseEntity<>(exception.getMessage(), HttpStatus.BAD_REQUEST); // Trả về 400
     }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<String> handleValidationException(MethodArgumentNotValidException exception){
+    public ResponseEntity<String> handleValidationException(MethodArgumentNotValidException exception) {
         System.out.println("Người dùng nhập chưa đúng thông tin");
         StringBuilder responseMessage = new StringBuilder();
-        for(FieldError fieldError: exception.getFieldErrors()){
+        for (FieldError fieldError : exception.getFieldErrors()) {
             responseMessage.append(fieldError.getDefaultMessage()).append("\n");
         }
         return new ResponseEntity<>(responseMessage.toString(), HttpStatus.BAD_REQUEST);

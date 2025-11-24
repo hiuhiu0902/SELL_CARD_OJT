@@ -21,9 +21,6 @@ public class Storage {
     @Column(name = "activate_code", nullable = false)
     private String activateCode;
 
-    @Column(name = "serial", nullable = false)
-    private String serial;
-
     @Column(name = "expiration_date", nullable = false)
     private LocalDateTime expirationDate;
 

@@ -36,7 +36,7 @@ public class OrderService {
     @Autowired
     StorageRepository stockRepository;
 
-    public Order createOrder(CreateOrderRequest request){
+    public Order createOrder(CreateOrderRequest request) {
         User user = authenticationService.getCurrentUser();
         Order order = new Order();
         order.setUser(user);
@@ -46,7 +46,7 @@ public class OrderService {
 
         List<OrderItem> items = new ArrayList<>();
         Long total = 0L;
-        for(OrderItemRequest item : request.getOrderItemRequests()){
+        for (OrderItemRequest item : request.getOrderItemRequests()) {
             ProductVariant variant = productVariantsRepository.findById(item.getVariantId()).orElse(null);
             OrderItem orderItem = new OrderItem();
             orderItem.setOrder(order);
@@ -59,15 +59,15 @@ public class OrderService {
 
             long currentStoack = stockRepository.countByVariant_VariantIdAndStatus(variant.getVariantId(), CardStatus.UNUSED);
 
-            if(item.getQuantity() > currentStoack){
+            if (item.getQuantity() > currentStoack) {
                 throw new BadRequestException("Not enough stock for variant id: " + variant.getVariantId());
             }
 
             List<Storage> storagesToSell = stockRepository.findByStatusAndVariant_VariantId(
-                CardStatus.UNUSED, variant.getVariantId(), PageRequest.of(0, item.getQuantity())
+                    CardStatus.UNUSED, variant.getVariantId(), PageRequest.of(0, item.getQuantity())
             );
 
-            for(Storage storage : storagesToSell){
+            for (Storage storage : storagesToSell) {
                 storage.setStatus(CardStatus.PENDING_PAYMENT);
                 storage.setOrderItem(orderItem);
                 stockRepository.save(storage);
@@ -78,11 +78,12 @@ public class OrderService {
 
         return orderRepository.save(order);
     }
-    public void handlePaymentSuccess(Long orderId){
+
+    public void handlePaymentSuccess(Long orderId) {
         Order order = orderRepository.findById(orderId).orElseThrow(() -> new BadRequestException("Order not found with id: " + orderId));
         order.setStatus(OrderStatus.COMPLETED);
 
-        for(OrderItem item : order.getOrderItems()) {
+        for (OrderItem item : order.getOrderItems()) {
             List<Storage> storages = stockRepository.findByOrderItem_ItemId(item.getItemId());
             for (Storage storage : storages) {
                 storage.setStatus(CardStatus.USED);
@@ -92,11 +93,12 @@ public class OrderService {
         }
         orderRepository.save(order);
     }
-    public void handlePaymentFailure(Long orderId){
+
+    public void handlePaymentFailure(Long orderId) {
         Order order = orderRepository.findById(orderId).orElseThrow(() -> new BadRequestException("Order not found with id: " + orderId));
         order.setStatus(OrderStatus.CANCELLED);
 
-        for(OrderItem item : order.getOrderItems()) {
+        for (OrderItem item : order.getOrderItems()) {
             List<Storage> storages = stockRepository.findByOrderItem_ItemId(item.getItemId());
             for (Storage storage : storages) {
                 storage.setStatus(CardStatus.UNUSED);
@@ -106,11 +108,12 @@ public class OrderService {
         }
         orderRepository.save(order);
     }
+
     public List<OrderHistoryResponse> getOrderHistoryForCurrentUser(Pageable pageable) {
         User user = authenticationService.getCurrentUser();
-        Page<Order> orders = orderRepository.findByUser_IdOrderByCreatedAtDesc(user.getUserId(), pageable);
+        Page<Order> orders = orderRepository.findByUser_UserIdOrderByCreatedAtDesc(user.getUserId(), pageable);
         List<OrderHistoryResponse> responseList = new ArrayList<>();
-        for(Order order : orders.getContent()){
+        for (Order order : orders.getContent()) {
             OrderHistoryResponse response = new OrderHistoryResponse();
             response.setOrderId(order.getOrderId());
             response.setOrderStatus(order.getStatus());
@@ -120,10 +123,11 @@ public class OrderService {
         }
         return responseList;
     }
+
     public OrderDetailResponse getOrderDetailForCurrentUser(Long orderId) {
         User user = authenticationService.getCurrentUser();
-        Order order = orderRepository.findByIdAndUser_Id(orderId, user.getUserId()).orElse(null);
-        if(!order.getStatus().equals(OrderStatus.COMPLETED)){
+        Order order = orderRepository.findByOrderIdAndUser_UserId(orderId, user.getUserId()).orElse(null);
+        if (!order.getStatus().equals(OrderStatus.COMPLETED)) {
             throw new BadRequestException("Order is not completed");
         }
         OrderDetailResponse response = new OrderDetailResponse();
@@ -132,7 +136,7 @@ public class OrderService {
         response.setTotalAmount(order.getTotalAmount());
 
         List<PurchasedItemResponse> purchasedItems = new ArrayList<>();
-        for(OrderItem item : order.getOrderItems()) {
+        for (OrderItem item : order.getOrderItems()) {
             PurchasedItemResponse responseItem = new PurchasedItemResponse();
             responseItem.setProductName(item.getProduct().getName());
             responseItem.setQuantity(item.getQuantity());
@@ -140,10 +144,9 @@ public class OrderService {
 
             List<Storage> storages = stockRepository.findByOrderItem_ItemId(item.getItemId());
             List<CardInfo> cardInfos = new ArrayList<>();
-            for(Storage storage : storages){
+            for (Storage storage : storages) {
                 CardInfo cardInfo = new CardInfo();
                 cardInfo.setCode(storage.getActivateCode());
-                cardInfo.setSerial(storage.getSerial());
                 cardInfo.setExpirationDate(storage.getExpirationDate());
                 cardInfos.add(cardInfo);
             }
@@ -153,6 +156,7 @@ public class OrderService {
 
         return response;
     }
+
     /**
      * Lấy tất cả đơn hàng (dành cho admin).
      * @param pageable
@@ -161,6 +165,7 @@ public class OrderService {
     public Page<Order> getAllOrders(Pageable pageable) {
         return orderRepository.findAll(pageable);
     }
+
     /**
      * Cập nhật trạng thái của một đơn hàng (dành cho admin).
      * @param orderId ID của đơn hàng
@@ -173,30 +178,32 @@ public class OrderService {
         order.setStatus(newStatus);
         return orderRepository.save(order);
     }
+
     /**
      * Người dùng hủy đơn hàng của chính họ.
      * Chỉ cho phép hủy khi đơn hàng đang ở trạng thái PENDING.
      * @param orderId ID của đơn hàng cần hủy
      */
-    public void cancelOrder(Long orderId){
+    public void cancelOrder(Long orderId) {
         User user = authenticationService.getCurrentUser();
-        Order order = orderRepository.findByIdAndUser_Id(orderId, user.getUserId()).orElse(null);
-        if(order == null){
+        Order order = orderRepository.findByOrderIdAndUser_UserId(orderId, user.getUserId()).orElse(null);
+        if (order == null) {
             throw new BadRequestException("Order not found");
         }
-        if(!order.getStatus().equals(OrderStatus.PENDING)){
+        if (!order.getStatus().equals(OrderStatus.PENDING)) {
             throw new BadRequestException("Only pending orders can be cancelled");
         }
         order.setStatus(OrderStatus.CANCELLED);
-        for(OrderItem item : order.getOrderItems()) {
+        for (OrderItem item : order.getOrderItems()) {
             List<Storage> storages = stockRepository.findByOrderItem_ItemId(item.getItemId());
-            for(Storage storage : storages){
+            for (Storage storage : storages) {
                 storage.setStatus(CardStatus.UNUSED);
                 storage.setOrderItem(null);
                 stockRepository.save(storage);
             }
         }
     }
+
     public Order getOrderById(Long orderId) {
         return orderRepository.findById(orderId).orElse(null);
     }

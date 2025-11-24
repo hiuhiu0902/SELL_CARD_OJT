@@ -19,14 +19,12 @@ public class User implements UserDetails {
     @Column(name = "user_id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     public Long userId;
-    @Column(unique = true, nullable = false,name = "username")
+    @Column(unique = true, nullable = false, name = "username")
     public String username;
-    @Column(nullable = false,name = "password")
+    @Column(nullable = false, name = "password")
     public String password;
-    @Column(unique = true, nullable = false,name = "email")
+    @Column(unique = true, nullable = false, name = "email")
     public String email;
-    @Column(unique = true, nullable = false,name = "phone")
-    public String phone;
     @Column(name = "banned_at")
     public LocalDateTime banned_at;
     @Column(name = "role")
@@ -37,11 +35,13 @@ public class User implements UserDetails {
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Member memberProfile;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         // Thêm tiền tố "ROLE_" vào đây
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.toString()));
     }
+
     @Override
     public boolean isAccountNonExpired() {
         return UserDetails.super.isAccountNonExpired();

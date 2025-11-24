@@ -24,35 +24,38 @@ public class ProductService {
     @Autowired
     BranchRepository branchRepository;
     @Autowired
-    ProductVariantsRepository  productVariantsRepository;
+    ProductVariantsRepository productVariantsRepository;
     @Autowired
     StorageRepository storageRepository;
     @Autowired
     AuthenticationService authenticationService;
     @Autowired
     DiscountRepository discountRepository;
-    public Page<ProductResponse> getAllProducts(Pageable pageable){
+
+    public Page<ProductResponse> getAllProducts(Pageable pageable) {
         Page<Product> productPage = productRepository.findAll(pageable);
         return productPage.map(this::convertToProductResponse);
     }
-    public ProductResponse convertToProductResponse(Product product){
+
+    public ProductResponse convertToProductResponse(Product product) {
         ProductResponse response = new ProductResponse();
         response.productId = product.getProductId();
         response.productName = product.getName();
         response.productDescription = product.getDescription();
         response.pictureURL = product.getPictureUrl();
-        if(product.getBranch() != null){
+        if (product.getBranch() != null) {
             Branch branchEntity = product.getBranch();
             response.branch = new BranchResponse(branchEntity.getBranchId(), branchEntity.getName());
         }
-        if(product.getVariant() != null && !product.getVariant().isEmpty()){
+        if (product.getVariant() != null && !product.getVariant().isEmpty()) {
             response.productVariantResponses = product.getVariant().stream()
                     .map(this::convertToProductVariantResponse)
                     .toList();
         }
         return response;
     }
-    public ProductVariantResponse convertToProductVariantResponse(ProductVariant productVariant){
+
+    public ProductVariantResponse convertToProductVariantResponse(ProductVariant productVariant) {
         ProductVariantResponse response = new ProductVariantResponse();
         response.id = productVariant.getVariantId();
         response.currency = productVariant.getCurrency();
@@ -60,45 +63,49 @@ public class ProductService {
         response.value = productVariant.getValue();
         return response;
     }
-    public ProductResponse getProductByName(String name){
+
+    public ProductResponse getProductByName(String name) {
         Product product = productRepository.getProductByName(name);
         return convertToProductResponse(product);
     }
-    public ProductResponse getProductById(Long id){
-        Product product =  productRepository.findById(id).orElse(null);
+
+    public ProductResponse getProductById(Long id) {
+        Product product = productRepository.findById(id).orElse(null);
         return convertToProductResponse(product);
     }
-    public Product addProduct(CreateProductRequest request){
+
+    public Product addProduct(CreateProductRequest request) {
         User user = authenticationService.getCurrentUser();
         Product product = new Product();
         System.out.println("Add lan 1");
         System.out.println(user.getRole());
         Branch branch = branchRepository.findBranchByName(request.getBranchName());
-        if(branch==null){
+        if (branch == null) {
             throw new BadRequestException("Branch not found");
         }
         Discount discount = discountRepository.findByCode(request.getDiscountCode());
-        if(discount == null){
+        if (discount == null) {
             throw new BadRequestException("Discount not found");
         }
-            product.setName(request.getName());
-            product.setDescription(request.getDescription());
-            product.setBranch(branch);
-            product.setPictureUrl(request.getPictureUrl());
-            product.setDiscount(discount);
-            productRepository.save(product) ;
+        product.setName(request.getName());
+        product.setDescription(request.getDescription());
+        product.setBranch(branch);
+        product.setPictureUrl(request.getPictureUrl());
+        product.setDiscount(discount);
+        productRepository.save(product);
         return product;
     }
-    public Product createProduct(CreateProductRequest request){
-        if(productRepository.existsByName(request.getName())){
+
+    public Product createProduct(CreateProductRequest request) {
+        if (productRepository.existsByName(request.getName())) {
             throw new BadRequestException("Product name already exists");
         }
         Branch branch = branchRepository.findBranchByName(request.getBranchName());
-        if(branch==null){
+        if (branch == null) {
             throw new BadRequestException("Branch not found");
         }
         Discount discount = discountRepository.findByCode(request.getDiscountCode());
-        if(discount == null){
+        if (discount == null) {
             throw new BadRequestException("Discount not found");
         }
 
@@ -111,7 +118,8 @@ public class ProductService {
 
         return productRepository.save(product);
     }
-    public ProductVariant addProductVariant(Long productId, AddVariantRequest request){
+
+    public ProductVariant addProductVariant(Long productId, AddVariantRequest request) {
         Product product = productRepository.findById(productId).orElse(null);
 
         ProductVariant variant = new ProductVariant();
@@ -123,11 +131,11 @@ public class ProductService {
         return productVariantsRepository.save(variant);
     }
 
-    public List<Storage> addStockToVariant(Long variantId, AddStockRequest request){
+    public List<Storage> addStockToVariant(Long variantId, AddStockRequest request) {
         ProductVariant variant = productVariantsRepository.findById(variantId).orElse(null);
 
         List<Storage> newStock = new ArrayList<>();
-        for(String code : request.getActivationCodes()){
+        for (String code : request.getActivationCodes()) {
             Storage storage = new Storage();
             storage.setVariant(variant);
             storage.setActivateCode(code);
@@ -138,13 +146,15 @@ public class ProductService {
         }
         return storageRepository.saveAll(newStock);
     }
-    public List<ProductVariantResponse> getAllProductVariants(Long productId){
-        List<ProductVariant> variants = productVariantsRepository.findByProductId(productId);
+
+    public List<ProductVariantResponse> getAllProductVariants(Long productId) {
+        List<ProductVariant> variants = productVariantsRepository.findByProduct_ProductId(productId);
         List<ProductVariantResponse> responses = variants.stream()
                 .map(this::convertToProductVariantResponse)
                 .toList();
         return responses;
     }
+
     /**
      * Cập nhật thông tin một sản phẩm đã có.
      * @param productId ID của sản phẩm cần cập nhật
@@ -172,13 +182,15 @@ public class ProductService {
         product.setDiscount(discount);
         return productRepository.save(product);
     }
+
     public void deleteProduct(Long productId) {
         Product product = productRepository
                 .findById(productId)
                 .orElseThrow(() -> new BadRequestException("Product not found with id: " + productId));
         productRepository.deleteById(productId);
     }
-    public ProductVariant updateProductVariant(Long variantId, UpdateVariantRequest request){
+
+    public ProductVariant updateProductVariant(Long variantId, UpdateVariantRequest request) {
         ProductVariant variant = productVariantsRepository.findById(variantId).orElse(null);
         variant.setPrice(request.getPrice());
         variant.setCurrency(request.getCurrency());

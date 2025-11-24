@@ -26,7 +26,7 @@ public class EmailService {
     private JavaMailSender javaMailSender;
 
     public void sendMail(EmailDetail details) {
-        try{
+        try {
             Context context = new Context();
             context.setVariable("name", details.getRecipient());
             context.setVariable("button", "Welcome to our system");
@@ -45,7 +45,7 @@ public class EmailService {
             javaMailSender.send(message);
             logger.info("Email sent successfully to {}", details.getRecipient());
 
-        } catch(MessagingException e){
+        } catch (MessagingException e) {
             logger.error("Failed to send email to {}: {}", details.getRecipient(), e.getMessage());
             e.printStackTrace();
         }

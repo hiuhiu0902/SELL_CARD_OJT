@@ -10,8 +10,9 @@ import java.util.List;
 
 
 @Repository
-public interface ProductVariantsRepository extends JpaRepository<ProductVariant,Long> {
-//    List<ProductVariant> findAll(Pageable pageable);
+public interface ProductVariantsRepository extends JpaRepository<ProductVariant, Long> {
+    //    List<ProductVariant> findAll(Pageable pageable);
     Page<ProductVariant> findAll(Pageable pageable);
-    List<ProductVariant> findByProductId(Long productId);
+
+    List<ProductVariant> findByProduct_ProductId(Long productId);
 }

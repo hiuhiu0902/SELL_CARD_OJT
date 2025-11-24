@@ -14,12 +14,12 @@ import org.springframework.data.repository.RepositoryDefinition;
 @EnableJpaRepositories
 
 @OpenAPIDefinition(info = @Info(title = "MyPlatform API", version = "1.0", description = "API for MyPlatform application"))
-@SecurityScheme(name = "api",scheme = "bearer", type = SecuritySchemeType.HTTP, in = SecuritySchemeIn.HEADER)
+@SecurityScheme(name = "api", scheme = "bearer", type = SecuritySchemeType.HTTP, in = SecuritySchemeIn.HEADER)
 public class SellCardDemo1Application {
 
-	public static void main(String[] args) {
-		SpringApplication.run(SellCardDemo1Application.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(SellCardDemo1Application.class, args);
+    }
 
 }
 

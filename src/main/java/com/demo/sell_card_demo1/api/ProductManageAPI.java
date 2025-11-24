@@ -28,13 +28,13 @@ public class ProductManageAPI {
     private ProductService productService;
 
     @PostMapping
-    public ResponseEntity<Product> createProduct(@RequestBody CreateProductRequest request){
+    public ResponseEntity<Product> createProduct(@RequestBody CreateProductRequest request) {
         Product newProduct = productService.createProduct(request);
         return ResponseEntity.ok(newProduct);
     }
 
     @GetMapping
-    public ResponseEntity<Page<ProductResponse>> getAllProducts(@ParameterObject Pageable pageable){
+    public ResponseEntity<Page<ProductResponse>> getAllProducts(@ParameterObject Pageable pageable) {
         Page<ProductResponse> products = productService.getAllProducts(pageable);
         return ResponseEntity.ok(products);
     }
@@ -58,13 +58,13 @@ public class ProductManageAPI {
     }
 
     @PostMapping("/{productId}/variants")
-    public ResponseEntity<ProductVariant> addVariant(@PathVariable Long productId, @RequestBody AddVariantRequest request){
+    public ResponseEntity<ProductVariant> addVariant(@PathVariable Long productId, @RequestBody AddVariantRequest request) {
         ProductVariant newVariant = productService.addProductVariant(productId, request);
         return ResponseEntity.ok(newVariant);
     }
 
     @GetMapping("/{productId}/variants")
-    public ResponseEntity<List<ProductVariantResponse>> getAllProductVariants(@PathVariable Long productId){
+    public ResponseEntity<List<ProductVariantResponse>> getAllProductVariants(@PathVariable Long productId) {
         List<ProductVariantResponse> variants = productService.getAllProductVariants(productId);
         return ResponseEntity.ok(variants);
     }
@@ -83,7 +83,7 @@ public class ProductManageAPI {
 //    }
 
     @PostMapping("/variants/{variantId}/stock")
-    public ResponseEntity<Void> addStock(@PathVariable Long variantId, @RequestBody AddStockRequest request){
+    public ResponseEntity<Void> addStock(@PathVariable Long variantId, @RequestBody AddStockRequest request) {
         productService.addStockToVariant(variantId, request);
         return ResponseEntity.ok().build();
     }

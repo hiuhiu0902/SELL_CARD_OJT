@@ -68,12 +68,12 @@ public class Filter extends OncePerRequestFilter {
         String uri = request.getRequestURI();
         String method = request.getMethod();
 
-        if(isPublicAPI(uri, method)){
+        if (isPublicAPI(uri, method)) {
             filterChain.doFilter(request, response);
-        }else{
+        } else {
             String token = getToken(request);
 
-            if(token == null){
+            if (token == null) {
                 resolver.resolveException(request, response, null, new AuthenticationException("Empty token!") {
                 });
                 return;
@@ -86,7 +86,7 @@ public class Filter extends OncePerRequestFilter {
                 account = tokenService.extractAccount(token);
             } catch (ExpiredJwtException expiredJwtException) {
                 // token het han
-                resolver.resolveException(request, response, null,  new AuthenticationException("Expired Token!"));
+                resolver.resolveException(request, response, null, new AuthenticationException("Expired Token!"));
                 return;
             } catch (MalformedJwtException malformedJwtException) {
                 resolver.resolveException(request, response, null, new AuthenticationException("Invalid Token!"));

@@ -34,13 +34,13 @@ public class PaymentService {
     @Transactional
     public String createPaymentLink(Order order) throws Exception {
         List<PaymentLinkItem> payOsItems = new ArrayList<>();
-        for(OrderItem item : order.getOrderItems()) {
-                PaymentLinkItem payOsItem = PaymentLinkItem.builder()
-                        .name(item.getProduct().getName())
-                        .quantity(item.getQuantity())
-                        .price(item.getPrice())
-                        .build();
-                payOsItems.add(payOsItem);
+        for (OrderItem item : order.getOrderItems()) {
+            PaymentLinkItem payOsItem = PaymentLinkItem.builder()
+                    .name(item.getProduct().getName())
+                    .quantity(item.getQuantity())
+                    .price(item.getPrice())
+                    .build();
+            payOsItems.add(payOsItem);
         }
         String description = "Payment for order #" + order.getOrderId();
         CreatePaymentLinkRequest request = CreatePaymentLinkRequest.builder()

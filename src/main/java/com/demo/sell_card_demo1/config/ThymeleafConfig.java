@@ -18,6 +18,7 @@ public class ThymeleafConfig {
         templateResolver.setCheckExistence(true);
         return templateResolver;
     }
+
     @Bean
     public TemplateEngine templateEngine() {
         TemplateEngine templateEngine = new TemplateEngine();

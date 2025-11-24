@@ -1,4 +1,5 @@
 package com.demo.sell_card_demo1.entity;
+
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

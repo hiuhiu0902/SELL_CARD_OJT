@@ -15,8 +15,9 @@ import java.util.List;
 public class Transaction {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name="transaction_id")
-    private Long transactionId;;
+    @Column(name = "transaction_id")
+    private Long transactionId;
+    ;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
@@ -29,6 +30,7 @@ public class Transaction {
     private LocalDateTime paidAt;
     private LocalDateTime createAt;
     private Long paymentCode;
+
     @PrePersist
     protected void onCreate() {
         createAt = LocalDateTime.now();

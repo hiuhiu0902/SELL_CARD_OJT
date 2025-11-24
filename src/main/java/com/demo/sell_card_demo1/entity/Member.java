@@ -1,5 +1,6 @@
 package com.demo.sell_card_demo1.entity;
 
+import com.demo.sell_card_demo1.enums.Gender;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -16,7 +17,10 @@ public class Member {
     public Long member_id;
     public String name;
     public String address;
-    public String gender;
+    @Enumerated(EnumType.STRING)
+    public Gender gender;
+    @Column(unique = true, nullable = false, name = "phone")
+    public String phone;
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", referencedColumnName = "user_id")
     public User user;

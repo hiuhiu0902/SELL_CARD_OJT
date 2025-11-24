@@ -22,23 +22,27 @@ import java.util.List;
 public class ProductAPI {
     @Autowired
     private ProductService productService;
-    @GetMapping
-    public ResponseEntity getAllProduct(Pageable pageable){
-        Page<ProductResponse> productResponse =  productService.getAllProducts(pageable);
+
+    @GetMapping("/products")
+    public ResponseEntity getAllProduct(Pageable pageable) {
+        Page<ProductResponse> productResponse = productService.getAllProducts(pageable);
         return ResponseEntity.ok().body(productResponse);
     }
-    @GetMapping
-    public ResponseEntity getProductVariant(@PathVariable Long productId){
+
+    @GetMapping("/products/{productId}/variants")
+    public ResponseEntity getProductVariant(@PathVariable Long productId) {
         List<ProductVariantResponse> responses = productService.getAllProductVariants(productId);
         return ResponseEntity.ok().body(responses);
     }
-    @GetMapping
-    public ResponseEntity getProductById(@PathVariable Long productId){
+
+    @GetMapping("/products/{productId}")
+    public ResponseEntity getProductById(@PathVariable Long productId) {
         ProductResponse response = productService.getProductById(productId);
         return ResponseEntity.ok().body(response);
     }
-    @GetMapping
-    public ResponseEntity getProductByName(@PathVariable String productName){
+
+    @GetMapping("/products/name/{productName}")
+    public ResponseEntity getProductByName(@PathVariable String productName) {
         ProductResponse responses = productService.getProductByName(productName);
         return ResponseEntity.ok().body(responses);
     }

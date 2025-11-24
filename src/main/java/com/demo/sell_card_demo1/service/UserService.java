@@ -21,23 +21,25 @@ public class UserService {
         AccountResponse accountResponse = new AccountResponse();
         accountResponse.setUsername(user.getUsername());
         accountResponse.setEmail(user.getEmail());
-        accountResponse.setPhone(user.getPhone());
+        accountResponse.setPhone(user.getMemberProfile().getPhone());
         accountResponse.setRole(user.getRole());
         accountResponse.setName(member.getName());
         accountResponse.setAddress(member.getAddress());
         return accountResponse;
     }
+
     public AccountResponse updateMyProfile(UpdateAccountRequest request) {
         User user = authenticationService.getCurrentUser();
         Member member = memberRepository.findMemberByUser(user);
-        user.setPhone(request.getPhone());
+        member.setPhone(request.getPhone());
         member.setName(request.getFullName());
         member.setAddress(request.getAddress());
         memberRepository.save(member);
         AccountResponse accountResponse = new AccountResponse();
         accountResponse.setUsername(user.getUsername());
         accountResponse.setEmail(user.getEmail());
-        accountResponse.setPhone(user.getPhone());
+        accountResponse.setPhone(member
+                .getPhone());
         accountResponse.setRole(user.getRole());
         accountResponse.setName(member.getName());
         accountResponse.setAddress(member.getAddress());
