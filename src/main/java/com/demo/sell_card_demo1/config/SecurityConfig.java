@@ -1,7 +1,6 @@
 package com.demo.sell_card_demo1.config;
 
 import com.demo.sell_card_demo1.service.AuthenticationService;
-import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -39,10 +38,9 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:3000"));
+        configuration.setAllowedOrigins(List.of("*"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
@@ -55,10 +53,18 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(
                         req -> req
-                                .requestMatchers("/api/login", "/api/register", "/swagger-ui/**", "/v3/api-docs/**", "/v3/api-docs.yaml", "/api/forgot-password",
-                                        "/api/account/*/profile", "/ws-chat/**").permitAll()
-                                .requestMatchers("/ws" +
-                                        "/**", "/ws").permitAll()
+                                .requestMatchers(
+                                        "/api/login",
+                                        "/api/register",
+                                        "/swagger-ui/**",
+                                        "/v3/api-docs/**",
+                                        "/v3/api-docs.yaml",
+                                        "/api/forgot-password",
+                                        "/payment-success.html", // Thêm dòng này để PayOS trả về không bị lỗi 403
+                                        "/payment-cancel.html",  // Thêm dòng này
+                                        "/ws-chat/**",
+                                        "/ws/**"
+                                ).permitAll()
                                 .requestMatchers("/admin/**").hasRole("ADMIN")
                                 .requestMatchers("/api/member/**").hasRole("MEMBER")
                                 .anyRequest().authenticated()
@@ -69,5 +75,3 @@ public class SecurityConfig {
                 .build();
     }
 }
-
-
