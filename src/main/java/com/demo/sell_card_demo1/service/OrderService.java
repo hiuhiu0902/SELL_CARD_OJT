@@ -9,10 +9,12 @@ import com.demo.sell_card_demo1.repository.OrderRepository;
 import com.demo.sell_card_demo1.repository.ProductRepository;
 import com.demo.sell_card_demo1.repository.ProductVariantsRepository;
 import com.demo.sell_card_demo1.repository.StorageRepository;
+import jakarta.persistence.criteria.Predicate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +38,8 @@ public class OrderService {
     @Autowired
     StorageRepository stockRepository;
 
+
+    @Transactional // Bắt buộc phải có để Lock hoạt động
     public Order createOrder(CreateOrderRequest request) {
         User user = authenticationService.getCurrentUser();
         Order order = new Order();
@@ -46,8 +50,22 @@ public class OrderService {
 
         List<OrderItem> items = new ArrayList<>();
         Long total = 0L;
+
         for (OrderItemRequest item : request.getOrderItemRequests()) {
-            ProductVariant variant = productVariantsRepository.findById(item.getVariantId()).orElse(null);
+            ProductVariant variant = productVariantsRepository.findById(item.getVariantId())
+                    .orElseThrow(() -> new BadRequestException("Variant not found"));
+
+            // Cố gắng lấy và KHÓA số lượng thẻ cần thiết ngay lập tức
+            List<Storage> storagesToSell = stockRepository.findAndLockCards(
+                    CardStatus.UNUSED,
+                    variant.getVariantId(),
+                    PageRequest.of(0, item.getQuantity())
+            );
+
+            if (storagesToSell.size() < item.getQuantity()) {
+                throw new BadRequestException("Not enough stock for variant: " + variant.getProduct().getName());
+            }
+
             OrderItem orderItem = new OrderItem();
             orderItem.setOrder(order);
             orderItem.setProduct(variant.getProduct());
@@ -57,22 +75,14 @@ public class OrderService {
             items.add(orderItem);
             total += variant.getPrice() * item.getQuantity();
 
-            long currentStoack = stockRepository.countByVariant_VariantIdAndStatus(variant.getVariantId(), CardStatus.UNUSED);
-
-            if (item.getQuantity() > currentStoack) {
-                throw new BadRequestException("Not enough stock for variant id: " + variant.getVariantId());
-            }
-
-            List<Storage> storagesToSell = stockRepository.findByStatusAndVariant_VariantId(
-                    CardStatus.UNUSED, variant.getVariantId(), PageRequest.of(0, item.getQuantity())
-            );
-
+            // Cập nhật trạng thái thẻ
             for (Storage storage : storagesToSell) {
                 storage.setStatus(CardStatus.PENDING_PAYMENT);
                 storage.setOrderItem(orderItem);
                 stockRepository.save(storage);
             }
         }
+
         order.setOrderItems(items);
         order.setTotalAmount(total);
 
@@ -202,6 +212,47 @@ public class OrderService {
                 stockRepository.save(storage);
             }
         }
+    }
+
+
+    public Page<Order> searchOrders(LocalDateTime from, LocalDateTime to, String username, OrderStatus status, Pageable pageable) {
+        Specification<Order> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (from != null && to != null) {
+                predicates.add(cb.between(root.get("createdAt"), from, to));
+            }
+            if (username != null && !username.isEmpty()) {
+                predicates.add(cb.like(root.get("user").get("username"), "%" + username + "%"));
+            }
+            if (status != null) {
+                predicates.add(cb.equal(root.get("status"), status));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+        return orderRepository.findAll(spec, pageable);
+    }
+
+    // 2. Hoàn tiền (Refund)
+    @Transactional
+    public void refundOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new BadRequestException("Order not found"));
+
+        if (order.getStatus() != OrderStatus.COMPLETED) {
+            throw new BadRequestException("Only completed orders can be refunded");
+        }
+        order.setStatus(OrderStatus.REFUNDED);
+        for (OrderItem item : order.getOrderItems()) {
+            List<Storage> cards = stockRepository.findByOrderItem_ItemId(item.getItemId());
+            for (Storage card : cards) {
+                card.setStatus(CardStatus.ERROR);
+                card.setOrderItem(null);
+                card.setActivationDate(null);
+            }
+            stockRepository.saveAll(cards);
+        }
+
+        orderRepository.save(order);
     }
 
     public Order getOrderById(Long orderId) {

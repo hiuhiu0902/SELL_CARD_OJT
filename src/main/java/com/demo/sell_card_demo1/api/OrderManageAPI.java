@@ -8,9 +8,12 @@ import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/admin/orders")
@@ -20,12 +23,6 @@ public class OrderManageAPI {
 
     @Autowired
     private OrderService orderService;
-
-    @GetMapping
-    public ResponseEntity<Page<Order>> getAllOrders(@ParameterObject Pageable pageable) {
-        Page<Order> orders = orderService.getAllOrders(pageable);
-        return ResponseEntity.ok(orders);
-    }
 
     @GetMapping("/{orderId}")
     public ResponseEntity<Order> getOrderById(@PathVariable Long orderId) {
@@ -37,5 +34,31 @@ public class OrderManageAPI {
     public ResponseEntity<Order> updateOrderStatus(@PathVariable Long orderId, @RequestParam OrderStatus status) {
         Order updatedOrder = orderService.updateOrderStatus(orderId, status);
         return ResponseEntity.ok(updatedOrder);
+    }
+
+
+    /**
+     * THÊM: Tìm kiếm nâng cao thay vì chỉ getAllOrders.
+     * Admin cần tìm: "Đơn của thằng A hôm qua bị lỗi".
+     */
+    @GetMapping
+    public ResponseEntity<Page<Order>> searchOrders(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
+            @RequestParam(required = false) String username,
+            @RequestParam(required = false) OrderStatus status,
+            @ParameterObject Pageable pageable) {
+        Page<Order> orders = orderService.searchOrders(from, to, username, status, pageable);
+        return ResponseEntity.ok(orders);
+    }
+
+    /**
+     * THÊM: Hoàn tiền đơn hàng.
+     * Khi khách báo thẻ lỗi, Admin cần nút này để trả lại tiền và thu hồi thẻ.
+     */
+    @PostMapping("/{orderId}/refund")
+    public ResponseEntity<String> refundOrder(@PathVariable Long orderId) {
+        orderService.refundOrder(orderId);
+        return ResponseEntity.ok("Order has been refunded and cards returned/marked as error.");
     }
 }

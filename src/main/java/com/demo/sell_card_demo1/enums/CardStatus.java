@@ -6,5 +6,6 @@ import lombok.NoArgsConstructor;
 public enum CardStatus {
     USED,
     UNUSED,
-    PENDING_PAYMENT
+    PENDING_PAYMENT,
+    ERROR
 }
