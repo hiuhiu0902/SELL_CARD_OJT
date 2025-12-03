@@ -11,7 +11,9 @@ public class AccountResponse {
     public String username;
     public String email;
     public String phone;
+    public String avatar;
     public Role role;
     public String token;
     public String address;
+    public String avatarUrl;
 }

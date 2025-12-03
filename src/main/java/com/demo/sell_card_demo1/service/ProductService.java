@@ -7,6 +7,7 @@ import com.demo.sell_card_demo1.exception.BadRequestException;
 import com.demo.sell_card_demo1.repository.*;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -41,13 +42,14 @@ public class ProductService {
     private StorageRepository storageRepository;
     @Autowired
     private DiscountRepository discountRepository;
+    @Autowired
+    private S3Service s3Service;
 
-    // Đường dẫn lưu ảnh (Bạn có thể cấu hình trong application.properties)
-    private final String UPLOAD_DIR = "uploads/";
+    @Value("${aws.s3.bucket-name}")
+    private String bucketName;
+    @Value("${aws.s3.region}")
+    private String region;
 
-    // ==================================================================================
-    // 1. HELPER METHODS (CONVERTER & UTILS)
-    // ==================================================================================
 
     public ProductResponse convertToProductResponse(Product product) {
         if (product == null) return null;
@@ -55,7 +57,7 @@ public class ProductService {
         response.productId = product.getProductId();
         response.productName = product.getName();
         response.productDescription = product.getDescription();
-        response.pictureURL = product.getPictureUrl();
+        response.pictureURL = s3Service.getUrl(product.getPictureUrl());
 
         if (product.getBranch() != null) {
             Branch branchEntity = product.getBranch();
@@ -81,10 +83,6 @@ public class ProductService {
         return response;
     }
 
-    // ==================================================================================
-    // 2. PUBLIC READ METHODS (CHO NGƯỜI DÙNG & ADMIN)
-    // ==================================================================================
-
     /**
      * API cơ bản lấy tất cả (Dùng cho Admin quản lý danh sách)
      */
@@ -100,18 +98,14 @@ public class ProductService {
         Specification<Product> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            // Tìm theo tên (không phân biệt hoa thường)
             if (StringUtils.hasText(keyword)) {
                 predicates.add(cb.like(cb.lower(root.get("name")), "%" + keyword.toLowerCase() + "%"));
             }
 
-            // Lọc theo Branch (Nhà mạng)
             if (StringUtils.hasText(branchName)) {
                 predicates.add(cb.equal(root.get("branch").get("name"), branchName));
             }
 
-            // Lọc theo giá (Cần join bảng variants vì giá nằm ở bảng variants)
-            // Lưu ý: Logic này sẽ tìm product có ÍT NHẤT 1 variant thỏa mãn khoảng giá
             if (minPrice != null || maxPrice != null) {
                 var variantJoin = root.join("variant");
                 if (minPrice != null) {
@@ -147,10 +141,6 @@ public class ProductService {
                 .toList();
     }
 
-    // ==================================================================================
-    // 3. PRODUCT MANAGEMENT (CREATE, UPDATE, DELETE)
-    // ==================================================================================
-
     public ProductResponse createProduct(CreateProductRequest request) {
         if (productRepository.existsByName(request.getName())) {
             throw new BadRequestException("Product name already exists");
@@ -162,16 +152,13 @@ public class ProductService {
         Discount discount = null;
         if(StringUtils.hasText(request.getDiscountCode())){
             discount = discountRepository.findByCode(request.getDiscountCode());
-            // Nếu discount null có thể ném lỗi hoặc bỏ qua tùy logic
         }
 
         Product product = new Product();
         product.setName(request.getName());
         product.setDescription(request.getDescription());
         product.setBranch(branch);
-        // Ưu tiên lấy imageUrl (chuẩn mới), fallback về pictureUrl (chuẩn cũ)
-        String img = request.getPictureUrl() != null ? request.getPictureUrl() : request.getPictureUrl();
-        product.setPictureUrl(img);
+        product.setPictureUrl(request.getPictureUrl());
 
         if (discount != null) product.setDiscount(discount);
 
@@ -200,7 +187,9 @@ public class ProductService {
             Discount discount = discountRepository.findByCode(request.getDiscountCode());
             if (discount != null) product.setDiscount(discount);
         }
-
+        if (request.getImageUrl() != null) {
+            product.setPictureUrl(request.getImageUrl());
+        }
         Product savedProduct = productRepository.save(product);
         return convertToProductResponse(savedProduct);
     }
@@ -284,28 +273,33 @@ public class ProductService {
      * Upload ảnh sản phẩm vào thư mục local 'uploads/'
      * Trả về đường dẫn ảnh tương đối.
      */
-    public String uploadProductImage(MultipartFile file) {
-        if (file.isEmpty()) {
-            throw new BadRequestException("Failed to store empty file.");
-        }
+    public ProductResponse uploadProductImage(Long productId, MultipartFile file ){
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new BadRequestException("Product not found"));
         try {
-            // Tạo tên file unique để tránh trùng
-            String fileName = UUID.randomUUID().toString() + "_" + StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
-            Path uploadPath = Paths.get(UPLOAD_DIR);
+            String extension = getFileExtension(file.getOriginalFilename());
 
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
-            }
+            String s3Key = s3Service.uploadFile(
+                    "products",
+                    String.valueOf(productId),
+                    file.getInputStream(),
+                    file.getSize(),
+                    extension
+            );
 
-            Path filePath = uploadPath.resolve(fileName);
-            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+            product.setPictureUrl(s3Key);
+            productRepository.save(product);
 
-            // Trả về URL (Ví dụ: /uploads/abc-xyz.jpg)
-            // Lưu ý: Bạn cần cấu hình ResourceHandler trong WebConfig để public thư mục này ra ngoài
-            return "/" + UPLOAD_DIR + fileName;
-
-        } catch (IOException e) {
-            throw new BadRequestException("Failed to store file: " + e.getMessage());
+            return convertToProductResponse(product);
+        } catch (Exception e) {
+            throw new BadRequestException("Could not store file: " + e.getMessage());
         }
+
+    }
+    private String getFileExtension(String filename) {
+        if (filename != null && filename.contains(".")) {
+            return filename.substring(filename.lastIndexOf(".") + 1);
+        }
+        return "jpg";
     }
 }

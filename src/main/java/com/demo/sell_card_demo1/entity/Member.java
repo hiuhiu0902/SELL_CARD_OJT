@@ -24,5 +24,6 @@ public class Member {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", referencedColumnName = "user_id")
     public User user;
+    public String avatarUrl;
 
 }

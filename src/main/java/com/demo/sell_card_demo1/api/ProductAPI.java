@@ -31,15 +31,12 @@ public class ProductAPI {
             @RequestParam(required = false) Long maxPrice,
             @ParameterObject Pageable pageable) {
 
-        // Bạn cần update ProductService để xử lý các tham số filter này
-        // Và ĐẶC BIỆT: Chỉ lấy các product có status = ACTIVE (ẩn các sp đã ngừng kinh doanh)
         Page<ProductResponse> productResponse = productService.searchProductsPublic(keyword, branchName, minPrice, maxPrice, pageable);
         return ResponseEntity.ok().body(productResponse);
     }
 
     @GetMapping("/products/{productId}/variants")
     public ResponseEntity<List<ProductVariantResponse>> getProductVariant(@PathVariable Long productId) {
-        // Nên lọc: Chỉ trả về các variant còn hàng (hoặc đánh dấu hết hàng)
         List<ProductVariantResponse> responses = productService.getAllProductVariants(productId);
         return ResponseEntity.ok().body(responses);
     }
@@ -50,7 +47,6 @@ public class ProductAPI {
         return ResponseEntity.ok().body(response);
     }
 
-    // API này có thể giữ nguyên hoặc gộp vào /products?keyword=...
     @GetMapping("/products/name/{productName}")
     public ResponseEntity<ProductResponse> getProductByName(@PathVariable String productName) {
         ProductResponse responses = productService.getProductByName(productName);
