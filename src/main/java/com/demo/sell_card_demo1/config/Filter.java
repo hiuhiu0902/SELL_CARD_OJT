@@ -44,7 +44,8 @@ public class Filter extends OncePerRequestFilter {
             "GET:/v3/api-docs.yaml",
             "GET:/swagger-resources/**",
             "GET:/webjars/**",
-
+            "GET:/products/branch/**",
+            "GET:/branches",
             "GET:/ws-chat/**",
             "GET:/ws-chat",
             "GET:/ws/**",

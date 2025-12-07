@@ -145,10 +145,7 @@ public class ProductService {
         if (productRepository.existsByName(request.getName())) {
             throw new BadRequestException("Product name already exists");
         }
-        Branch branch = branchRepository.findBranchByName(request.getBranchName());
-        if (branch == null) {
-            throw new BadRequestException("Branch not found: " + request.getBranchName());
-        }
+
         Discount discount = null;
         if(StringUtils.hasText(request.getDiscountCode())){
             discount = discountRepository.findByCode(request.getDiscountCode());
@@ -157,7 +154,15 @@ public class ProductService {
         Product product = new Product();
         product.setName(request.getName());
         product.setDescription(request.getDescription());
-        product.setBranch(branch);
+        Branch branch = branchRepository.findBranchByName(request.getBranchName());
+        if (branch == null) {
+            Branch newBranch = new Branch();
+            newBranch.setName(request.getBranchName());
+            branchRepository.save(newBranch);
+            product.setBranch(newBranch);
+        }else{
+            product.setBranch(branch);
+        }
         product.setPictureUrl(request.getPictureUrl());
 
         if (discount != null) product.setDiscount(discount);
@@ -301,5 +306,32 @@ public class ProductService {
             return filename.substring(filename.lastIndexOf(".") + 1);
         }
         return "jpg";
+    }
+    public List<Branch> getAllBranches() {
+        return branchRepository.findAll();
+    }
+    public Branch deleteBranch(Long branchId) {
+        Branch branch = branchRepository.findById(branchId)
+                .orElseThrow(() -> new BadRequestException("Branch not found"));
+        branchRepository.delete(branch);
+        return branch;
+    }
+    public Branch createBranch(String branchName) {
+        if (branchRepository.findBranchByName(branchName) != null) {
+            throw new BadRequestException("Branch name already exists");
+        }
+        Branch branch = new Branch();
+        branch.setName(branchName);
+        branchRepository.save(branch);
+        return branch;
+    }
+    public Page<ProductResponse> getProductsByBranch(Long branchId, Pageable pageable) {
+        if (!branchRepository.existsById(branchId)) {
+            throw new BadRequestException("Branch not found with id: " + branchId);
+        }
+
+        Page<Product> productPage = productRepository.findByBranch_BranchId(branchId, pageable);
+
+        return productPage.map(this::convertToProductResponse);
     }
 }

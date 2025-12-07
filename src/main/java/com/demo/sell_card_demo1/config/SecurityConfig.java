@@ -64,6 +64,8 @@ public class SecurityConfig {
                                         "/payment-cancel.html",  // Thêm dòng này
                                         "/products",
                                         "/products/**",
+                                        "/products/branch/**",
+                                        "/branches",
                                         "/ws-chat/**",
                                         "/ws/**"
                                 ).permitAll()

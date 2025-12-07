@@ -2,11 +2,13 @@ package com.demo.sell_card_demo1.api;
 
 import com.demo.sell_card_demo1.dto.ProductResponse;
 import com.demo.sell_card_demo1.dto.ProductVariantResponse;
+import com.demo.sell_card_demo1.entity.Branch;
 import com.demo.sell_card_demo1.service.ProductService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -52,4 +54,20 @@ public class ProductAPI {
         ProductResponse responses = productService.getProductByName(productName);
         return ResponseEntity.ok().body(responses);
     }
+    @GetMapping("/products/branch/{branchId}")
+    public ResponseEntity<Page<ProductResponse>> getProductsByBranch(
+            @PathVariable Long branchId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(productService.getProductsByBranch(branchId, pageable));
+    }
+
+    @GetMapping("/branches")
+    public ResponseEntity getAllBranches() {
+        List<Branch> branches = productService.getAllBranches();
+        return ResponseEntity.ok().body(branches);
+    }
+
 }

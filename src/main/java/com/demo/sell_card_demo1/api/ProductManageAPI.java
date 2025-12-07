@@ -1,6 +1,7 @@
 package com.demo.sell_card_demo1.api;
 
 import com.demo.sell_card_demo1.dto.*;
+import com.demo.sell_card_demo1.entity.Branch;
 import com.demo.sell_card_demo1.service.ProductService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
@@ -83,5 +84,16 @@ public class ProductManageAPI {
             @PathVariable Long id,
             @RequestParam("file") MultipartFile file) {
         return ResponseEntity.ok(productService.uploadProductImage(id, file));
+    }
+
+    @PutMapping("/branch/{id}")
+    public ResponseEntity deleteBranch(@PathVariable Long id) {
+        productService.deleteBranch(id);
+        return ResponseEntity.noContent().build();
+    }
+    @PostMapping("/branch")
+    public ResponseEntity createBranch(@RequestBody String branchName) {
+        Branch branch = productService.createBranch(branchName);
+        return ResponseEntity.ok().body(branch);
     }
 }
