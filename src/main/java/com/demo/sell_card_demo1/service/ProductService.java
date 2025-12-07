@@ -63,12 +63,22 @@ public class ProductService {
             Branch branchEntity = product.getBranch();
             response.branch = new BranchResponse(branchEntity.getBranchId(), branchEntity.getName());
         }
+        response.productVariantResponses = productVariantsRepository.findByProduct_ProductId(product.getProductId()).stream()
+                .map(this::convertToProductVariantResponse)
+                .toList();
+        return response;
+    }
+    public ProductResponse convertToProductResponseWithoutVariants(Product product) {
+        if (product == null) return null;
+        ProductResponse response = new ProductResponse();
+        response.productId = product.getProductId();
+        response.productName = product.getName();
+        response.productDescription = product.getDescription();
+        response.pictureURL = s3Service.getUrl(product.getPictureUrl());
 
-        // Chỉ convert variants nếu có
-        if (product.getVariant() != null && !product.getVariant().isEmpty()) {
-            response.productVariantResponses = product.getVariant().stream()
-                    .map(this::convertToProductVariantResponse)
-                    .toList();
+        if (product.getBranch() != null) {
+            Branch branchEntity = product.getBranch();
+            response.branch = new BranchResponse(branchEntity.getBranchId(), branchEntity.getName());
         }
         return response;
     }
@@ -120,12 +130,13 @@ public class ProductService {
             return cb.and(predicates.toArray(new Predicate[0]));
         };
 
-        return productRepository.findAll(spec, pageable).map(this::convertToProductResponse);
+        return productRepository.findAll(spec, pageable).map(this::convertToProductResponseWithoutVariants);
     }
 
     public ProductResponse getProductById(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new BadRequestException("Product not found with id: " + id));
+
         return convertToProductResponse(product);
     }
 
