@@ -62,6 +62,8 @@ public class SecurityConfig {
                                         "/api/forgot-password",
                                         "/payment-success.html", // Thêm dòng này để PayOS trả về không bị lỗi 403
                                         "/payment-cancel.html",  // Thêm dòng này
+                                        "/products",
+                                        "/products/**",
                                         "/ws-chat/**",
                                         "/ws/**"
                                 ).permitAll()
