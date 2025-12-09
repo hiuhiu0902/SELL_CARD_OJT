@@ -18,7 +18,6 @@ public class AuthenticationAPI {
 
     @PostMapping("/register")
     public ResponseEntity register(@RequestBody RegisterRequest user) {
-        System.out.println("Hello");
         User newUser = authenticationService.register(user);
         return ResponseEntity.ok("Register successfully");
     }

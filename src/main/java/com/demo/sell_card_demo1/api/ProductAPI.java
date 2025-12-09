@@ -25,7 +25,7 @@ public class ProductAPI {
      * SỬA: Thêm khả năng lọc (Filter).
      * Thay vì chỉ getAll, user muốn tìm theo Category, Branch, Keyword.
      */
-    @GetMapping("/products")
+    @GetMapping("/products/")
     public ResponseEntity<Page<ProductResponse>> getAllProduct(
             @RequestParam(required = false) String keyword,     // Tìm theo tên
             @RequestParam(required = false) String branchName,  // Lọc theo nhà mạng (Garena, Viettel...)
@@ -64,7 +64,7 @@ public class ProductAPI {
         return ResponseEntity.ok(productService.getProductsByBranch(branchId, pageable));
     }
 
-    @GetMapping("/branches")
+    @GetMapping("/branches/")
     public ResponseEntity getAllBranches() {
         List<Branch> branches = productService.getAllBranches();
         return ResponseEntity.ok().body(branches);
