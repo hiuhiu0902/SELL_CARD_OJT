@@ -18,10 +18,12 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Configuration
 public class SecurityConfig {
+
     @Autowired
     Filter filter;
 
@@ -35,12 +37,24 @@ public class SecurityConfig {
         return authenticationConfiguration.getAuthenticationManager();
     }
 
+    // --- CẤU HÌNH CORS CHUẨN ---
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("*"));
+
+        // 1. Chỉ định rõ domain Frontend (Localhost hoặc Vercel...)
+        // KHÔNG dùng "*" nếu có allowCredentials(true)
+        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+
+        // 2. Cho phép các method
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
+
+        // 3. Cho phép các Header quan trọng (đặc biệt là Authorization)
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "x-auth-token"));
+
+        // 4. Cho phép gửi Credentials (Cookie, Auth Header)
+        configuration.setAllowCredentials(true);
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
@@ -50,7 +64,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationService authenticationService) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
-                .cors(Customizer.withDefaults())
+                .cors(Customizer.withDefaults()) // Dòng này kích hoạt bean corsConfigurationSource ở trên
                 .authorizeHttpRequests(
                         req -> req
                                 .requestMatchers(
@@ -58,15 +72,11 @@ public class SecurityConfig {
                                         "/api/register",
                                         "/swagger-ui/**",
                                         "/v3/api-docs/**",
-                                        "/v3/api-docs.yaml",
                                         "/api/forgot-password",
-                                        "/payment-success.html", // Thêm dòng này để PayOS trả về không bị lỗi 403
-                                        "/payment-cancel.html",  // Thêm dòng này
-                                        "/products",
+                                        "/payment-success.html",
+                                        "/payment-cancel.html",
                                         "/products/**",
-                                        "/products/branch/**",
-                                        "/branches",
-                                        "/ws-chat/**",
+                                        "/branches/**",
                                         "/ws/**"
                                 ).permitAll()
                                 .requestMatchers("/admin/**").hasRole("ADMIN")
