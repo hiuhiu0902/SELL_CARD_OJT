@@ -22,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -260,13 +261,22 @@ public class ProductService {
                 .orElseThrow(() -> new BadRequestException("Variant not found"));
 
         List<Storage> newStock = new ArrayList<>();
+
+        LocalDate activeDate = request.getActivationDate() != null ? request.getActivationDate() : LocalDate.now();
+
         for (String code : request.getActivationCodes()) {
             Storage storage = new Storage();
             storage.setVariant(variant);
             storage.setActivateCode(code);
-            storage.setActivationDate(request.getActivationDate());
-            storage.setExpirationDate(request.getExpirationDate());
-            storage.setStatus(CardStatus.UNUSED); // Mặc định là chưa dùng
+
+            storage.setActivationDate(activeDate.atStartOfDay());
+
+            if (request.getExpirationDate() != null) {
+                storage.setExpirationDate(request.getExpirationDate().atTime(23, 59, 59));
+            }
+            // ------------------------------------------------
+
+            storage.setStatus(CardStatus.UNUSED);
             newStock.add(storage);
         }
         storageRepository.saveAll(newStock);

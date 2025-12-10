@@ -29,7 +29,7 @@ public class Transaction {
     private TransactionStatus transactionStatus;
     private LocalDateTime paidAt;
     private LocalDateTime createAt;
-    private Long paymentCode;
+    private String paymentCode;
 
     @PrePersist
     protected void onCreate() {

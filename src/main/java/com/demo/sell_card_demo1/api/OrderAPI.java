@@ -9,6 +9,7 @@ import com.demo.sell_card_demo1.repository.OrderRepository;
 import com.demo.sell_card_demo1.service.OrderService;
 import com.demo.sell_card_demo1.service.PaymentService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -29,11 +30,6 @@ public class OrderAPI {
     @Autowired
     PaymentService paymentService;
 
-    //    @PostMapping("/create-order")
-//    public ResponseEntity createOrder(CreateOrderRequest createOrderRequest) {
-//        orderService.createOrder(createOrderRequest);
-//        return ResponseEntity.ok("Create order");
-//    }
     @PostMapping("/create")
     public ResponseEntity<?> createOrderAndPaymentLink(@RequestBody CreateOrderRequest createOrderRequest) {
         try {
@@ -55,13 +51,14 @@ public class OrderAPI {
     }
 
     @GetMapping("/history")
-    public ResponseEntity getOrderHistory(Pageable pageable) {
-        List<OrderHistoryResponse> responses = orderService.getOrderHistoryForCurrentUser(pageable);
+    public ResponseEntity<Page<OrderHistoryResponse>> getOrderHistory(@ParameterObject Pageable pageable) {
+        Page<OrderHistoryResponse> responses = orderService.getOrderHistoryForCurrentUser(pageable);
         return ResponseEntity.ok(responses);
     }
 
     @GetMapping("/{orderId}")
-    public ResponseEntity getOrderDetailById(@PathVariable Long orderId) {
+    public ResponseEntity<OrderDetailResponse> getOrderDetailById(@PathVariable Long orderId) {
+        // Gọi hàm dành riêng cho Current User
         OrderDetailResponse response = orderService.getOrderDetailForCurrentUser(orderId);
         return ResponseEntity.ok(response);
     }
@@ -71,6 +68,27 @@ public class OrderAPI {
         try {
             orderService.cancelOrder(orderId);
             return ResponseEntity.ok("Order with id " + orderId + " has been cancelled.");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+    @PutMapping("/{orderId}")
+    public ResponseEntity<?> updateOrder(
+            @PathVariable Long orderId,
+            @RequestBody CreateOrderRequest updateRequest) {
+        try {
+            // Bước 1: Update đơn hàng (kho, items, total)
+            Order updatedOrder = orderService.updatePendingOrder(orderId, updateRequest);
+
+            // Bước 2: Vì tổng tiền thay đổi, cần tạo lại Link thanh toán mới
+            String newPaymentLink = paymentService.createPaymentLink(updatedOrder);
+
+            // Bước 3: Trả về link mới cho FE
+            CreatePaymentResponse response = new CreatePaymentResponse();
+            response.setPaymentUrl(newPaymentLink);
+
+            return ResponseEntity.ok(response);
+
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

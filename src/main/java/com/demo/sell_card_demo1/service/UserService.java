@@ -45,12 +45,23 @@ public class UserService {
     }
 
     public AccountResponse updateMyProfile(UpdateAccountRequest request) {
+        // 1. Lấy User và Member hiện tại
         User user = authenticationService.getCurrentUser();
         Member member = memberRepository.findMemberByUser(user);
-        member.setPhone(request.getPhone());
-        member.setName(request.getFullName());
-        member.setAddress(request.getAddress());
+        if (request.getPhone() != null && !request.getPhone().trim().isEmpty()) {
+            member.setPhone(request.getPhone());
+        }
+
+        if (request.getFullName() != null && !request.getFullName().trim().isEmpty()) {
+            member.setName(request.getFullName());
+        }
+
+        if (request.getAddress() != null && !request.getAddress().trim().isEmpty()) {
+            member.setAddress(request.getAddress());
+        }
+
         memberRepository.save(member);
+
         AccountResponse accountResponse = buildAccountResponse(user, member);
         return accountResponse;
     }

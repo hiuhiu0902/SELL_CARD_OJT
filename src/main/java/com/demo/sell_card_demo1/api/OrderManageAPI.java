@@ -1,5 +1,7 @@
 package com.demo.sell_card_demo1.api;
 
+import com.demo.sell_card_demo1.dto.OrderDetailResponse;
+import com.demo.sell_card_demo1.dto.OrderHistoryResponse;
 import com.demo.sell_card_demo1.entity.Order;
 import com.demo.sell_card_demo1.enums.OrderStatus;
 import com.demo.sell_card_demo1.service.OrderService;
@@ -25,14 +27,14 @@ public class OrderManageAPI {
     private OrderService orderService;
 
     @GetMapping("/{orderId}")
-    public ResponseEntity<Order> getOrderById(@PathVariable Long orderId) {
-        Order order = orderService.getOrderById(orderId);
+    public ResponseEntity<OrderDetailResponse> getOrderById(@PathVariable Long orderId) {
+        OrderDetailResponse order = orderService.getOrderById(orderId);
         return ResponseEntity.ok(order);
     }
 
     @PutMapping("/{orderId}/status")
-    public ResponseEntity<Order> updateOrderStatus(@PathVariable Long orderId, @RequestParam OrderStatus status) {
-        Order updatedOrder = orderService.updateOrderStatus(orderId, status);
+    public ResponseEntity<?> updateOrderStatus(@PathVariable Long orderId, @RequestParam OrderStatus status) {
+        OrderDetailResponse updatedOrder = orderService.updateOrderStatus(orderId, status);
         return ResponseEntity.ok(updatedOrder);
     }
 
@@ -42,13 +44,13 @@ public class OrderManageAPI {
      * Admin cần tìm: "Đơn của thằng A hôm qua bị lỗi".
      */
     @GetMapping
-    public ResponseEntity<Page<Order>> searchOrders(
+    public ResponseEntity<Page<OrderHistoryResponse>> searchOrders(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
             @RequestParam(required = false) String username,
             @RequestParam(required = false) OrderStatus status,
             @ParameterObject Pageable pageable) {
-        Page<Order> orders = orderService.searchOrders(from, to, username, status, pageable);
+        Page<OrderHistoryResponse> orders = orderService.searchOrders(from, to, username, status, pageable);
         return ResponseEntity.ok(orders);
     }
 

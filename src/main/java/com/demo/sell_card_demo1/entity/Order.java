@@ -35,6 +35,7 @@ public class Order {
     @Column(name = "total")
     private Long totalAmount;
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+
     private List<OrderItem> orderItems = new ArrayList<>();
     // Getters and Setters
     @ManyToOne(fetch = FetchType.LAZY)
