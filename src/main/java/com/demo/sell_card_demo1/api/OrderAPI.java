@@ -31,22 +31,31 @@ public class OrderAPI {
     PaymentService paymentService;
 
     @PostMapping("/create")
-    public ResponseEntity<?> createOrderAndPaymentLink(@RequestBody CreateOrderRequest createOrderRequest) {
+    public ResponseEntity<?> createOrder(@RequestBody CreateOrderRequest request) {
+        Order newOrder = null;
         try {
-            // Bước 1: Tạo đơn hàng trong database
-            Order newOrder = orderService.createOrder(createOrderRequest);
+            newOrder = orderService.createOrder(request);
 
-            // Bước 2: Dùng đơn hàng vừa tạo để lấy link thanh toán
-            String paymentLink = paymentService.createPaymentLink(newOrder);
+            String paymentUrl = paymentService.createPaymentLink(newOrder);
 
-            // Bước 3: Đóng gói link vào một object và trả về cho client
             CreatePaymentResponse response = new CreatePaymentResponse();
-            response.setPaymentUrl(paymentLink);
+            response.setPaymentUrl(paymentUrl);
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            // Trả về lỗi nếu có vấn đề (ví dụ: hết hàng)
-            return ResponseEntity.badRequest().body(e.getMessage());
+            if (newOrder != null && newOrder.getOrderId() != null) {
+                System.err.println("Lỗi tạo link thanh toán. Đang Rollback đơn hàng ID: " + newOrder.getOrderId());
+
+                try {
+                    orderService.rollbackOrder(newOrder.getOrderId());
+                } catch (Exception rollbackEx) {
+                    // Log lỗi này lại vì đây là lỗi nghiêm trọng (Cần manual fix DB)
+                    System.err.println("Lỗi CRITICAL: Không thể rollback đơn hàng " + newOrder.getOrderId());
+                }
+            }
+
+            // Trả về lỗi cho Frontend biết
+            return ResponseEntity.badRequest().body("Lỗi tạo giao dịch: " + e.getMessage());
         }
     }
 

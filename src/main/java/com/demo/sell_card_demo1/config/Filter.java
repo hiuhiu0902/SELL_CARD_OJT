@@ -41,6 +41,9 @@ public class Filter extends OncePerRequestFilter {
             "GET:/api/products/**",
             "GET:/swagger-ui/**",
             "GET:/v3/api-docs/**",
+            "GET:/api/payment/**",             // Cho phép Success và Cancel
+            "POST:/api/payment/**",            // Dự phòng
+            "POST:/api/v1/payment-webhook/**",
             "GET:/v3/api-docs.yaml",
             "GET:/swagger-resources/**",
             "GET:/webjars/**",
@@ -70,6 +73,10 @@ public class Filter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String uri = request.getRequestURI();
         String method = request.getMethod();
+        if (uri.contains("/api/payment") || uri.contains("/api/payment-webhook")) {
+            filterChain.doFilter(request, response);
+            return; // Quan trọng: Return luôn để không chạy xuống đoạn check token bên dưới
+        }
 
         if (isPublicAPI(uri, method)) {
             filterChain.doFilter(request, response);

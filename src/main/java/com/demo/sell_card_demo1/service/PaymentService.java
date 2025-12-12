@@ -2,12 +2,10 @@ package com.demo.sell_card_demo1.service;
 
 import com.demo.sell_card_demo1.entity.Order;
 import com.demo.sell_card_demo1.entity.OrderItem;
-import com.demo.sell_card_demo1.entity.Transaction;
 import com.demo.sell_card_demo1.repository.TransactionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import vn.payos.PayOS;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
@@ -21,38 +19,38 @@ public class PaymentService {
 
     @Autowired
     private PayOS payOS;
-    @Autowired
-    private TransactionRepository transactionRepository;
-    @Autowired
-    private AuthenticationService authenticationService;
-    @Value("${payos.return-url}")
-    private String returnUrl;
+    // @Autowired TransactionRepository transactionRepository; // Bỏ nếu chưa dùng tới để code gọn
+    private String cancelUrl = "https://sellcardojt.site/api/payment/cancel";
+    private String returnUrl = "https://sellcardojt.site/api/payment/success";
 
-    @Value("${payos.cancel-url}")
-    private String cancelUrl;
-
-    @Transactional
     public String createPaymentLink(Order order) throws Exception {
+        // 1. Map OrderItems sang PayOS Items
         List<PaymentLinkItem> payOsItems = new ArrayList<>();
         for (OrderItem item : order.getOrderItems()) {
             PaymentLinkItem payOsItem = PaymentLinkItem.builder()
-                    .name(item.getProduct().getName())
+                    .name(item.getProduct().getName()) // Lưu ý: Tên quá dài có thể gây lỗi, nên cắt ngắn nếu cần
                     .quantity(item.getQuantity())
                     .price(item.getPrice())
                     .build();
             payOsItems.add(payOsItem);
         }
-        String description = "Payment for order #" + order.getOrderId();
+
+        // 2. Xử lý Description: PayOS yêu cầu tối đa 25 ký tự, không dấu, ko ký tự đặc biệt
+        // Format an toàn: "DH [Mã đơn]"
+        String description = "DH " + order.getOrderId();
+
+        // 3. Tạo request
         CreatePaymentLinkRequest request = CreatePaymentLinkRequest.builder()
-                .orderCode(order.getOrderId())
+                .orderCode(order.getOrderId()) // orderId phải nằm trong khoảng giới hạn của PayOS (Long)
                 .amount(order.getTotalAmount())
                 .description(description)
                 .items(payOsItems)
                 .cancelUrl(cancelUrl)
                 .returnUrl(returnUrl)
                 .build();
+
+        // 4. Gọi API
         CreatePaymentLinkResponse response = payOS.paymentRequests().create(request);
         return response.getCheckoutUrl();
     }
-
 }

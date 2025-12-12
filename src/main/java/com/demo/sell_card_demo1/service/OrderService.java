@@ -46,14 +46,29 @@ public class OrderService {
         order.setPayment(request.getPaymentMethod());
         order.setCreatedAt(LocalDateTime.now());
         order.setStatus(OrderStatus.PENDING);
-
-        // Gọi hàm helper để xử lý item và kho
         long totalAmount = processOrderItems(request.getOrderItemRequests(), order);
-
         order.setTotalAmount(totalAmount);
         return orderRepository.save(order);
     }
+    @Transactional
+    public void rollbackOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId).orElse(null);
+        if (order == null) return;
 
+        if (order.getStatus() == OrderStatus.COMPLETED) return;
+
+        for (OrderItem item : order.getOrderItems()) {
+            List<Storage> lockedCards = stockRepository.findByOrderItem_ItemId(item.getItemId());
+            for (Storage card : lockedCards) {
+                card.setStatus(CardStatus.UNUSED); // Trả về trạng thái chưa bán
+                card.setOrderItem(null);           // Hủy liên kết
+            }
+            stockRepository.saveAll(lockedCards);
+        }
+
+        // 3. Tùy chọn: Nếu bạn muốn xóa hẳn khỏi DB thì dùng dòng dưới thay vì setStatus
+        orderRepository.delete(order);
+    }
     // =========================================================================
     // 2. CẬP NHẬT ĐƠN HÀNG (Sửa, Xóa, Thêm item khi chưa thanh toán)
     // =========================================================================
@@ -99,13 +114,38 @@ public class OrderService {
         return orderRepository.save(order);
     }
     // ... các imports
+    // Thêm vào trong class OrderService
 
-    public OrderDetailResponse getOrderById(Long orderId) {
-        // 1. Tìm Order từ Database
+    // Thêm đoạn này vào trong class OrderService
+    @Transactional
+    public void handlePaymentCancel(Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new BadRequestException("Order not found with id: " + orderId));
 
-        // 2. Khởi tạo DTO response và map thông tin chung
+        // Nếu đơn đã hoàn thành thì không được phép hủy nữa (đề phòng)
+        if (order.getStatus() == OrderStatus.COMPLETED) {
+            return;
+        }
+
+        // 1. Đặt trạng thái là FAILED
+        order.setStatus(OrderStatus.FAILED);
+
+        for (OrderItem item : order.getOrderItems()) {
+            List<Storage> storages = stockRepository.findByOrderItem_ItemId(item.getItemId());
+            for (Storage storage : storages) {
+                storage.setStatus(CardStatus.UNUSED); // Trả về trạng thái chưa dùng
+                storage.setOrderItem(null);           // Gỡ liên kết
+            }
+            stockRepository.saveAll(storages);
+        }
+
+        orderRepository.save(order);
+    }
+
+    public OrderDetailResponse getOrderById(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new BadRequestException("Order not found with id: " + orderId));
+
         OrderDetailResponse response = new OrderDetailResponse();
         response.setOrderId(order.getOrderId());
         response.setPayment(order.getPayment());
@@ -113,13 +153,11 @@ public class OrderService {
         response.setTotalAmount(order.getTotalAmount());
         response.setOrderDate(order.getCreatedAt());
 
-        // 3. Map thông tin User (cho Admin xem)
         if (order.getUser() != null) {
             response.setUserId(order.getUser().getUserId());
             response.setUsername(order.getUser().getUsername());
         }
 
-        // 4. Map thông tin Transaction (nếu có)
         if (order.getTransaction() != null) {
             // Giả sử Transaction entity có getId() hoặc getTransactionCode()
             response.setTransactionCode(order.getTransaction().getTransactionId());
@@ -160,50 +198,34 @@ public class OrderService {
     private long processOrderItems(List<OrderItemRequest> itemRequests, Order order) {
         long total = 0L;
         List<OrderItem> newItems = new ArrayList<>();
-
         for (OrderItemRequest itemReq : itemRequests) {
             ProductVariant variant = productVariantsRepository.findById(itemReq.getVariantId())
                     .orElseThrow(() -> new BadRequestException("Variant not found"));
-
-            // Tìm và LOCK thẻ
             List<Storage> storagesToSell = stockRepository.findAndLockCards(
                     CardStatus.UNUSED,
                     variant.getVariantId(),
                     PageRequest.of(0, itemReq.getQuantity())
             );
-
             if (storagesToSell.size() < itemReq.getQuantity()) {
                 throw new BadRequestException("Not enough stock for variant: " + variant.getProduct().getName());
             }
-
-            // Tạo OrderItem
             OrderItem orderItem = new OrderItem();
             orderItem.setOrder(order);
             orderItem.setProduct(variant.getProduct());
             orderItem.setQuantity(itemReq.getQuantity());
             orderItem.setPrice(variant.getPrice());
-
             newItems.add(orderItem);
             total += variant.getPrice() * itemReq.getQuantity();
-
-            // Cập nhật trạng thái thẻ sang PENDING_PAYMENT
             for (Storage storage : storagesToSell) {
                 storage.setStatus(CardStatus.PENDING_PAYMENT);
-                storage.setOrderItem(orderItem); // Hibernate sẽ tự update ID sau khi save
+                storage.setOrderItem(orderItem);
                 stockRepository.save(storage);
             }
         }
-
-        // Add all items vào order
-        if (order.getOrderItems() == null) {
-            order.setOrderItems(newItems);
-        } else {
-            order.getOrderItems().addAll(newItems);
-        }
-
+        if (order.getOrderItems() == null) order.setOrderItems(newItems);
+        else order.getOrderItems().addAll(newItems);
         return total;
     }
-
     // =========================================================================
     // 3. LẤY LỊCH SỬ ĐƠN HÀNG (Refactor trả về Page)
     // =========================================================================
@@ -223,7 +245,11 @@ public class OrderService {
         return orderRepository.findAll(pageable);
     }
     public void handlePaymentSuccess(Long orderId) {
-        Order order = orderRepository.findById(orderId).orElseThrow(() -> new BadRequestException("Order not found with id: " + orderId));
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new BadRequestException("Order not found with id: " + orderId));
+
+        if(order.getStatus() == OrderStatus.COMPLETED) return;
+
         order.setStatus(OrderStatus.COMPLETED);
 
         for (OrderItem item : order.getOrderItems()) {

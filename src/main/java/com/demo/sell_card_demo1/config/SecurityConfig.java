@@ -77,6 +77,8 @@ public class SecurityConfig {
                                         "/api/branches/**",
                                         "/ws/**"
                                 ).permitAll()
+                                .requestMatchers("/api/payment/**").permitAll()
+                                .requestMatchers("/api/v1/payment-webhook/**").permitAll()
                                 .requestMatchers("/admin/**").hasRole("ADMIN")
                                 .requestMatchers("/api/member/**").hasRole("MEMBER")
                                 .anyRequest().authenticated()
