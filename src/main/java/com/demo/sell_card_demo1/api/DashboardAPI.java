@@ -15,7 +15,7 @@ import java.time.LocalDate;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/admin/dashboard")
+@RequestMapping("/api/admin/dashboard")
 @SecurityRequirement(name = "api")
 @PreAuthorize("hasRole('ADMIN')")
 public class DashboardAPI {

@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 
 @RestController
-@RequestMapping("/admin/orders")
+@RequestMapping("/api/admin/orders")
 @SecurityRequirement(name = "api")
 @PreAuthorize("hasRole('ADMIN')")
 public class OrderManageAPI {

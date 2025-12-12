@@ -42,17 +42,15 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // 1. Chỉ định rõ domain Frontend (Localhost hoặc Vercel...)
-        // KHÔNG dùng "*" nếu có allowCredentials(true)
-        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
-
-        // 2. Cho phép các method
+        configuration.setAllowedOrigins(List.of(
+                "http://localhost:5173",          // Môi trường Dev (Local)
+                "https://sellcardojt.site",       // Môi trường Prod (Domain chính)
+                "https://www.sellcardojt.site"    // Môi trường Prod (Domain www - dự phòng)
+        ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
 
-        // 3. Cho phép các Header quan trọng (đặc biệt là Authorization)
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "x-auth-token"));
 
-        // 4. Cho phép gửi Credentials (Cookie, Auth Header)
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -75,8 +73,8 @@ public class SecurityConfig {
                                         "/api/forgot-password",
                                         "/payment-success.html",
                                         "/payment-cancel.html",
-                                        "/products/**",
-                                        "/branches/**",
+                                        "/api/products/**",
+                                        "/api/branches/**",
                                         "/ws/**"
                                 ).permitAll()
                                 .requestMatchers("/admin/**").hasRole("ADMIN")

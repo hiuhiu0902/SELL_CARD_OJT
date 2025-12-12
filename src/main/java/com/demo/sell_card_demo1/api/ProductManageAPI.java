@@ -16,7 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
-@RequestMapping("/admin/products")
+@RequestMapping("/api/admin/products")
 @RestController
 @SecurityRequirement(name = "api")
 @PreAuthorize("hasRole('ADMIN')")

@@ -26,6 +26,8 @@ public class UserAPI {
     @PutMapping("/profile")
     public ResponseEntity<AccountResponse> updateMyProfile(@RequestBody UpdateAccountRequest request) {
         return ResponseEntity.ok(userService.updateMyProfile(request));
+
+
     }
 
     @PostMapping(value = "/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

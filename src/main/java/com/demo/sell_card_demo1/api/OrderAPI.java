@@ -20,7 +20,7 @@ import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
 import java.util.List;
 
 @RestController
-@RequestMapping("/order")
+@RequestMapping("/api/order")
 @SecurityRequirement(
         name = "api"
 )

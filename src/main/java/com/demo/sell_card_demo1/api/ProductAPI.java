@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
+@RequestMapping("/api")
 // Không có @PreAuthorize vì đây là public
 public class ProductAPI {
     @Autowired
